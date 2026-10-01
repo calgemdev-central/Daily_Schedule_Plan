@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FEU_Schedule_ArcGIS_PlannerV2.1</title>
+<title>FEU_Schedule_ArcGIS_PlannerV2.2</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -76,6 +76,20 @@
   .section.collapsed > .section-body{display:none;}
   .section.collapsed > .section-title{margin-bottom:0;}
   .section-title .tcount{color:var(--accent);margin-left:6px;}
+  .section.collapsible > .section-title:hover{color:var(--text);}
+  /* ABDWLOC section + shaped markers */
+  .abd-file{font-size:11px;color:var(--muted);margin:0 0 6px;display:flex;justify-content:space-between;gap:6px;}
+  .abd-file button{background:none;border:none;color:#ff8a8a;cursor:pointer;font-size:11px;padding:0;}
+  .abd-sub{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:8px 0 3px;font-weight:bold;}
+  .abd-mini-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;border-radius:5px;padding:2px 6px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:normal;}
+  .abd-mini-btn:hover{color:var(--text);border-color:var(--accent);}
+  #abd-fields{max-height:220px;overflow-y:auto;}
+  .abd-legend-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:3px 6px;}
+  .shape-ico{background:none!important;border:none!important;display:flex;align-items:center;justify-content:center;}
+  .shape-ico svg{display:block;overflow:visible;filter:drop-shadow(0 0 1px rgba(0,0,0,.7));}
+  .abd-tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:bold;color:#fff;margin-bottom:4px;}
+  .event-tip .abd-fail{margin-top:5px;padding:4px 6px;border-left:3px solid #e0197d;background:rgba(224,25,125,.12);font-size:11px;white-space:normal;}
+  .event-tip .xflag{margin-top:5px;padding:3px 6px;border-left:3px solid #f5a623;background:rgba(245,166,35,.14);font-size:11px;font-weight:bold;white-space:normal;}
   /* dispatch contacts tree */
   .dgroup-head{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:6px;cursor:pointer;font-size:13px;}
   .dgroup-head:hover{background:var(--panel2);}
@@ -258,6 +272,7 @@
     .event-tip .dir-link{font-size:14px;padding:11px 6px;}
     .leaflet-popup-close-button{width:32px!important;height:32px!important;font-size:24px!important;line-height:30px!important;}
     #map-placeholder{padding:0 24px;text-align:center;}
+    #footer-note{display:none;}
   }
 </style>
 </head>
@@ -294,31 +309,60 @@
         <div class="stat-box"><div class="num" id="stat-ops">0</div><div class="lbl">Operators</div></div>
       </div>
 
-      <div class="section">
-        <div class="section-title"><span>Basemap</span></div>
+      <div class="section collapsible collapsed" id="section-basemap">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="false"><span><span class="chev">&#9662;</span>Basemap</span></div>
+        <div class="section-body">
         <div class="basemap-toggle" id="basemap-toggle"></div>
+        </div>
       </div>
 
-      <div class="section" id="section-area" style="display:none;">
-        <div class="section-title"><span>Field Area</span><button data-target="area">All / None</button></div>
+      <div class="section collapsible" id="section-area" style="display:none;">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="true"><span><span class="chev">&#9662;</span>Field Area</span><button data-target="area">All / None</button></div>
+        <div class="section-body">
         <div class="filter-search"><input type="text" id="search-dispatch" placeholder="Search field area, contact name, or phone…"></div>
         <div id="filter-area"></div>
+        </div>
       </div>
 
-      <div class="section" id="section-operator" style="display:none;">
-        <div class="section-title"><span>Operator</span><button data-target="operator">All / None</button></div>
+      <div class="section collapsible collapsed" id="section-operator" style="display:none;">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="false"><span><span class="chev">&#9662;</span>Operator</span><button data-target="operator">All / None</button></div>
+        <div class="section-body">
         <div id="filter-operator"></div>
+        </div>
       </div>
 
-      <div class="section" id="section-eventtype" style="display:none;">
-        <div class="section-title"><span>Inspection Type</span><button data-target="eventtype">All / None</button></div>
+      <div class="section collapsible collapsed" id="section-eventtype" style="display:none;">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="false"><span><span class="chev">&#9662;</span>Inspection Type</span><button data-target="eventtype">All / None</button></div>
+        <div class="section-body">
         <div class="filter-search"><input type="text" id="search-eventtype" placeholder="Search inspection type…"></div>
         <div id="filter-eventtype"></div>
+        </div>
       </div>
 
-      <div class="section" id="section-mayshall" style="display:none;">
-        <div class="section-title"><span>Witness Type</span><button data-target="mayshall">All / None</button></div>
+      <div class="section collapsible collapsed" id="section-mayshall" style="display:none;">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="false"><span><span class="chev">&#9662;</span>Witness Type</span><button data-target="mayshall">All / None</button></div>
+        <div class="section-body">
         <div id="filter-mayshall"></div>
+        </div>
+      </div>
+
+      <div class="section collapsible collapsed" id="section-abd">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="false"><span><span class="chev">&#9662;</span>ABDWLOC Inspections<span class="tcount" id="abd-count"></span></span></div>
+        <div class="section-body">
+        <label class="dropzone" id="abd-drop" style="padding:10px 8px;">
+          <span id="abd-drop-text">Drop ABDWLOC export (.xlsx) here, or click to browse</span>
+          <input type="file" id="abd-input" accept=".xlsx,.xls,.xlsm,.csv">
+        </label>
+        <div id="abd-file" class="abd-file">No ABDWLOC file loaded.</div>
+        <div class="abd-sub">Layers</div>
+        <div id="abd-layers"></div>
+        <div class="filter-search"><input type="text" id="abd-search" placeholder="Search API, well, operator, fail comment…"></div>
+        <div class="abd-sub" style="display:flex;justify-content:space-between;align-items:center;">Field
+          <span><button class="abd-mini-btn" id="abd-field-all">All / None</button> <button class="abd-mini-btn" id="abd-zoom">Zoom to</button></span></div>
+        <div id="abd-fields"></div>
+        <div class="abd-sub">Schedule marker shapes</div>
+        <div id="abd-legend"></div>
+        </div>
       </div>
 
       <div class="section collapsible collapsed" id="section-remote" style="display:none;">
@@ -333,11 +377,13 @@
         </div>
       </div>
 
-      <div class="section" id="rw-panel" style="display:none;">
-        <div class="section-title"><span>Remote Witness Management</span></div>
+      <div class="section collapsible collapsed" id="rw-panel" style="display:none;">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="false"><span><span class="chev">&#9662;</span>Remote Witness Management</span></div>
+        <div class="section-body">
         <div id="rw-count"></div>
         <div id="rw-warn">No Shall-witness events match your current filters.</div>
         <button id="rw-open-modal">Open Remote Witness Management</button>
+        </div>
       </div>
 
       <div id="rwm-overlay">
@@ -436,14 +482,16 @@
 
       <button id="reset-btn" style="display:none;">Reset all filters</button>
 
-      <div class="section">
-        <div class="section-title"><span>Reference Layers</span></div>
+      <div class="section collapsible collapsed" id="section-ref">
+        <div class="section-title" tabindex="0" role="button" aria-expanded="false"><span><span class="chev">&#9662;</span>Reference Layers</span></div>
+        <div class="section-body">
         <label class="dropzone" id="geo-drop" style="padding:12px 10px;">
           <span class="big" style="font-size:18px;">&#128506;</span>
           Drop PLSS / Twp-Rng / Wells GeoJSON here
           <input type="file" id="geo-input" accept=".geojson,.json" multiple>
         </label>
         <div id="geo-layer-list"></div>
+        </div>
       </div>
     </div>
     <div id="footer-note">Auto-maps common CalGEM daily-schedule columns (Sch DateTime, Oprtr, Fld, Area, API/Name, Event Type, May/Shall, Notes, Lat/Long). Reference layers must be GeoJSON</div>
@@ -477,7 +525,39 @@ map.getPane('eventPane').style.zIndex = 650; // above overlayPane and markerPane
 // so a fingertip can hit them. Hover tooltips are skipped (there is no hover
 // on a phone); a tap opens the popup directly. Desktop/mouse is unchanged.
 const IS_TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-const eventRenderer = IS_TOUCH ? L.canvas({pane:'eventPane', tolerance:14, padding:0.3}) : null;
+map.createPane('abdPane');
+map.getPane('abdPane').style.zIndex = 645; // ABDWLOC wells sit just under schedule events
+
+// ---------- shaped markers (schedule surface plugs / ABDWLOC events, and all ABDWLOC wells) ----------
+function shapeSvg(shape, fill, letter, s){
+  const h=s/2, st='#111', w=Math.max(1.2, s/14);
+  let p;
+  if(shape==='diamond') p=`<polygon points="${h},0.8 ${s-0.8},${h} ${h},${s-0.8} 0.8,${h}" fill="${fill}" stroke="${st}" stroke-width="${w}"/>`;
+  else if(shape==='square') p=`<rect x="1.5" y="1.5" width="${s-3}" height="${s-3}" rx="2" fill="${fill}" stroke="${st}" stroke-width="${w}"/>`;
+  else if(shape==='triangle') p=`<polygon points="${h},0.6 ${s-0.6},${s-1.2} 0.6,${s-1.2}" fill="${fill}" stroke="${st}" stroke-width="${w}"/>`;
+  else p=`<circle cx="${h}" cy="${h}" r="${h-1}" fill="${fill}" stroke="${st}" stroke-width="${w}"/>`;
+  const ty = shape==='triangle' ? s*0.8 : h + s*0.18;
+  const txt = letter ? `<text x="${h}" y="${ty}" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="${s*0.5}" fill="#fff" stroke="#000" stroke-width="${s*0.05}" paint-order="stroke">${letter}</text>` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">${p}${txt}</svg>`;
+}
+const _shapeIconCache = {};
+function shapeIcon(shape, fill, letter, visSize){
+  const vis = IS_TOUCH ? Math.round(visSize*1.5) : visSize;
+  const box = IS_TOUCH ? Math.max(42, vis+12) : vis;      // invisible finger-sized tap box on phones
+  const key = [shape,fill,letter,vis,box].join('|');
+  if(!_shapeIconCache[key]) _shapeIconCache[key] = L.divIcon({className:'shape-ico', html:shapeSvg(shape,fill,letter,vis),
+    iconSize:[box,box], iconAnchor:[box/2,box/2], tooltipAnchor:[vis/2,0], popupAnchor:[0,-vis/2]});
+  return _shapeIconCache[key];
+}
+// Which schedule events get a special shape (field-area color is kept):
+//   surface plug event  -> triangle "S";  ABDWLOC event on the schedule -> square "A"
+function scheduleShapeKind(eventType){
+  const t = String(eventType||'').toLowerCase();
+  if(/abdwloc|abandoned well loc|well ?site restoration/.test(t)) return 'abd';
+  if(/surface/.test(t) && /plug/.test(t)) return 'surface';
+  return null;
+}
+function normApi(v){ let d=String(v==null?'':v).replace(/\D/g,''); if(d.length===9) d='0'+d; return d; }
 (function(){
   const btn = document.getElementById('mobile-menu-btn'), bd = document.getElementById('sidebar-backdrop');
   const setOpen = (open)=>{ document.body.classList.toggle('sidebar-open', open); };
@@ -1043,15 +1123,25 @@ function renderEvents(events){
 
   events.forEach(ev=>{
     const color = areaColors[ev.area];
-    const m = L.circleMarker([ev.lat, ev.lng], {
-      pane: 'eventPane',
-      ...(eventRenderer ? {renderer: eventRenderer} : {}),
-      radius: IS_TOUCH ? (ev.priority ? 10 : 7.5) : (ev.priority ? 6 : 3.5),
-      fillColor: color,
-      color: "#000000",
-      weight: IS_TOUCH ? (ev.priority ? 2 : 1.2) : (ev.priority ? 1.2 : 0.5),
-      fillOpacity: 0.9
-    });
+    const shapeKind = scheduleShapeKind(ev.event_type);
+    let m;
+    if(shapeKind || IS_TOUCH){
+      // DOM icon: triangle/square for surface plug / ABDWLOC events; on phones every event uses this so each has a big tap box
+      const shape = shapeKind==='surface' ? 'triangle' : shapeKind==='abd' ? 'square' : 'circle';
+      const letter = shapeKind==='surface' ? 'S' : shapeKind==='abd' ? 'A' : '';
+      const size = shapeKind ? (ev.priority ? 20 : 16) : (ev.priority ? 13 : 10);
+      m = L.marker([ev.lat, ev.lng], {pane:'eventPane', icon:shapeIcon(shape, color, letter, size), riseOnHover:true, keyboard:false});
+      m.bringToFront = function(){ this.setZIndexOffset(1000); return this; };
+    } else {
+      m = L.circleMarker([ev.lat, ev.lng], {
+        pane: 'eventPane',
+        radius: ev.priority ? 6 : 3.5,
+        fillColor: color,
+        color: "#000000",
+        weight: ev.priority ? 1.2 : 0.5,
+        fillOpacity: 0.9
+      });
+    }
     const priorityTag = ev.priority ? '<span class="priority-flag">PRIORITY</span>' : '';
     const notes = ev.dispatch_notes ? `<div class="notes">${ev.dispatch_notes}</div>` : '';
     const infoHtml = `
@@ -1067,7 +1157,8 @@ function renderEvents(events){
         </table>
         ${notes}
       </div>`;
-    if(!IS_TOUCH) m.bindTooltip(infoHtml, {className:'event-tip', sticky:false, direction:'auto', offset:[0,-10], opacity:0.97});
+    const infoFn = () => infoHtml + (window.abdFlagForApi ? abdFlagForApi(ev.subject_id) : '');
+    if(!IS_TOUCH) m.bindTooltip(infoFn, {className:'event-tip', sticky:false, direction:'auto', offset:[0,-10], opacity:0.97});
     // Hover shows the quick info above; click opens a popup with the same
     // info plus a Directions link, since a hover tooltip closes the instant
     // the pointer leaves the (small) marker, before it could ever reach a link.
@@ -1075,7 +1166,7 @@ function renderEvents(events){
     // whatever origin is known at the moment the popup is actually opened.
     // data-lat/lng let rwRefreshGeo() patch this exact link's href in place
     // if a location comes back after the popup is already on screen.
-    m.bindPopup(() => infoHtml + `<div class="dir-row"><a class="dir-link" data-lat="${ev.lat}" data-lng="${ev.lng}" href="${rwDirectionsUrl(ev.lat, ev.lng)}" target="_blank" rel="noopener">🧭 Get Directions</a></div>`,
+    m.bindPopup(() => infoFn() + `<div class="dir-row"><a class="dir-link" data-lat="${ev.lat}" data-lng="${ev.lng}" href="${rwDirectionsUrl(ev.lat, ev.lng)}" target="_blank" rel="noopener">🧭 Get Directions</a></div>`,
       {className:'event-tip', maxWidth: IS_TOUCH ? Math.min(320, window.innerWidth - 60) : 300, autoPanPadding:[20,70]});
     m.on('popupopen', rwRefreshGeo); // retry each time — cheap once permission is granted, and catches a late "Allow"
     m.on('mouseover', ()=>m.bringToFront());
@@ -2170,6 +2261,195 @@ EMBEDDED_GEO_LAYERS.forEach(l => {
 
 restoreScheduleFromCache();
 
+
+// =====================================================================
+// ABDWLOC layer — loads an ABDWLOC export and plots each well with its own
+// shape (independent of the schedule's filters).
+//   AWEval = Fail, or Ready for Re-Inspection = Y  -> Re-inspection (magenta diamond "R")
+//   AWEval blank / not yet inspected                -> Original inspection (teal square "O")
+//   AWEval = Pass                                   -> not shown
+// =====================================================================
+const ABD = {rows:[], file:null, layer:L.layerGroup().addTo(map), show:{reinsp:true, orig:true}, fields:new Set(), q:''};
+const ABD_KINDS = {
+  reinsp:{label:'Re-inspection',       shape:'diamond', fill:'#e0197d', letter:'R'},
+  orig:  {label:'Original inspection', shape:'square',  fill:'#12b5b0', letter:'O'}
+};
+const ABD_CACHE_KEY = 'feu_abdwloc_file_v1';
+function abdEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function abdNorm(k){ return String(k||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function abdCol(keys, names){
+  for(const n of names){ const w=abdNorm(n); const k=keys.find(k=>abdNorm(k)===w); if(k) return k; }
+  for(const n of names){ const w=abdNorm(n); const k=keys.find(k=>abdNorm(k).includes(w)); if(k) return k; }
+  return null;
+}
+function abdDate(v){
+  if(v===''||v==null) return '';
+  const d = v instanceof Date ? v : (typeof v==='number' ? new Date(Math.round((v-25569)*864e5)) : new Date(v));
+  return isNaN(d) ? String(v) : (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+}
+function abdComments(s){
+  const seen=new Set(), out=[];
+  String(s||'').split(',').map(p=>p.trim()).filter(p=>p && p!=='.').forEach(p=>{
+    const k=p.toLowerCase().replace(/[.\s]+$/,''); if(!seen.has(k)){ seen.add(k); out.push(p); } });
+  return out.join('; ');
+}
+function abdParse(buf){
+  const wb = XLSX.read(buf, {type:'array', cellDates:true});
+  let rows=null;
+  for(const n of wb.SheetNames){
+    const r = XLSX.utils.sheet_to_json(wb.Sheets[n], {defval:'', raw:true});
+    if(!r.length) continue;
+    const ks = Object.keys(r[0]).map(abdNorm).join('|');
+    if(/latitude/.test(ks) && /longitude/.test(ks) && /aweval|awinspectiondate/.test(ks)){ rows=r; break; }
+  }
+  if(!rows) throw new Error('No sheet with Latitude, Longitude and AWEval columns — is this an ABDWLOC export?');
+  const K = Object.keys(rows[0]);
+  const c = {api:abdCol(K,['WellAPI','API']), name:abdCol(K,['WellDesignation','WellName']), type:abdCol(K,['WellType']),
+    status:abdCol(K,['WellStatus']), lat:abdCol(K,['Latitude']), lng:abdCol(K,['Longitude']), ptd:abdCol(K,['PTInspectionDate']),
+    pte:abdCol(K,['PTEval']), awd:abdCol(K,['AWInspectionDate']), awe:abdCol(K,['AWEval']), days:abdCol(K,['DaysSinceAW']),
+    cm:abdCol(K,['AWFailComments']), op:abdCol(K,['Operator']), county:abdCol(K,['CountyName']), field:abdCol(K,['FieldName','Field']),
+    ready:abdCol(K,['ReadyforReInspection','ReadyforRI'])};
+  const g = (r,k)=> k==null || r[k]==null ? '' : r[k];
+  const out=[];
+  rows.forEach(r=>{
+    const lat=parseFloat(g(r,c.lat)); let lng=parseFloat(g(r,c.lng));
+    if(!isFinite(lat)||!isFinite(lng)||!lat||!lng) return; if(lng>0) lng=-lng;
+    const awe=String(g(r,c.awe)).trim(), ready=String(g(r,c.ready)).trim().toUpperCase();
+    let kind; if(/^fail/i.test(awe)||ready==='Y') kind='reinsp'; else if(/^pass/i.test(awe)) return; else kind='orig';
+    out.push({kind, lat, lng, api:normApi(g(r,c.api)), name:g(r,c.name), wtype:g(r,c.type), status:g(r,c.status),
+      op:String(g(r,c.op)).trim(), field:String(g(r,c.field)).trim()||'(blank)', county:g(r,c.county),
+      ptd:abdDate(g(r,c.ptd)), pte:g(r,c.pte), awd:abdDate(g(r,c.awd)), awe, days:g(r,c.days), cm:abdComments(g(r,c.cm))});
+  });
+  return out;
+}
+
+// schedule APIs, for "also on today's schedule" flags
+function scheduleApiSet(){ return new Set((window.currentEvents||currentEvents||[]).map(e=>normApi(e.subject_id))); }
+// flag added to schedule-event popups when that well is on the ABDWLOC list
+window.abdFlagForApi = function(api){
+  const a = normApi(api); if(!a || !ABD.rows.length) return '';
+  const hit = ABD.rows.find(r=>r.api===a); if(!hit) return '';
+  return `<div class="xflag">&#9873; On ABDWLOC list (${ABD_KINDS[hit.kind].label}${hit.cm ? ': '+abdEsc(hit.cm) : ''})</div>`;
+};
+function abdInfo(r){
+  const k = ABD_KINDS[r.kind];
+  const onSched = scheduleApiSet().has(r.api) ? `<div class="xflag">&#9873; Also on the loaded daily schedule</div>` : '';
+  return `<div><span class="abd-tag" style="background:${k.fill}">ABDWLOC &middot; ${k.label}</span>
+    <h3>${abdEsc(r.name)||'(no name)'}</h3>
+    <table>
+      <tr><td class="k">API</td><td>${abdEsc(r.api)}</td></tr>
+      <tr><td class="k">Field</td><td>${abdEsc(r.field)}${r.county?' ('+abdEsc(r.county)+')':''}</td></tr>
+      <tr><td class="k">Operator</td><td>${abdEsc(r.op)}</td></tr>
+      <tr><td class="k">Type/Status</td><td>${abdEsc(r.wtype)} / ${abdEsc(r.status)}</td></tr>
+      <tr><td class="k">Plug tag</td><td>${abdEsc(r.pte||'—')}${r.ptd?' &middot; '+abdEsc(r.ptd):''}</td></tr>
+      <tr><td class="k">ABDWLOC</td><td>${abdEsc(r.awe||'not yet inspected')}${r.awd?' &middot; '+abdEsc(r.awd):''}${r.days!==''?' &middot; '+abdEsc(r.days)+' days ago':''}</td></tr>
+    </table>
+    ${r.cm ? `<div class="abd-fail"><b>Fail comments:</b> ${abdEsc(r.cm)}</div>` : ''}${onSched}</div>`;
+}
+function abdVisible(){
+  const q = ABD.q.trim().toLowerCase();
+  return ABD.rows.filter(r=> ABD.show[r.kind] && ABD.fields.has(r.field) &&
+    (!q || [r.api,r.name,r.op,r.field,r.cm].join(' ').toLowerCase().includes(q)));
+}
+function abdRender(){
+  ABD.layer.clearLayers();
+  const vis = abdVisible();
+  vis.forEach(r=>{
+    const k = ABD_KINDS[r.kind];
+    const m = L.marker([r.lat, r.lng], {pane:'abdPane', icon:shapeIcon(k.shape, k.fill, k.letter, 18), riseOnHover:true, keyboard:false});
+    if(!IS_TOUCH) m.bindTooltip(()=>abdInfo(r), {className:'event-tip', sticky:false, direction:'auto', offset:[0,-8], opacity:0.97});
+    m.bindPopup(()=>abdInfo(r) + `<div class="dir-row"><a class="dir-link" data-lat="${r.lat}" data-lng="${r.lng}" href="${rwDirectionsUrl(r.lat, r.lng)}" target="_blank" rel="noopener">&#129517; Get Directions</a></div>`,
+      {className:'event-tip', maxWidth: IS_TOUCH ? Math.min(320, window.innerWidth-60) : 300, autoPanPadding:[20,70]});
+    m.on('popupopen', ()=>{ m.closeTooltip(); rwRefreshGeo(); });
+    m.addTo(ABD.layer);
+  });
+  const tot = ABD.rows.length;
+  document.getElementById('abd-count').textContent = tot ? (vis.length===tot ? `(${tot})` : `(${vis.length}/${tot})`) : '';
+}
+function abdBuildLists(){
+  const cnt = {reinsp:0, orig:0}, fc = {};
+  ABD.rows.forEach(r=>{ cnt[r.kind]++; fc[r.field]=(fc[r.field]||0)+1; });
+  const lay = document.getElementById('abd-layers'); lay.innerHTML='';
+  Object.keys(ABD_KINDS).forEach(kind=>{
+    const k=ABD_KINDS[kind], row=document.createElement('div'); row.className='filter-row';
+    row.innerHTML = `<input type="checkbox" ${ABD.show[kind]?'checked':''}><span style="display:flex">${shapeSvg(k.shape,k.fill,k.letter,15)}</span><span class="label">${k.label}</span><span class="count">${cnt[kind]}</span>`;
+    const cb=row.querySelector('input');
+    cb.onchange=()=>{ ABD.show[kind]=cb.checked; abdRender(); };
+    row.onclick=e=>{ if(e.target!==cb){ cb.checked=!cb.checked; cb.onchange(); } };
+    lay.appendChild(row);
+  });
+  const fl = document.getElementById('abd-fields'); fl.innerHTML='';
+  const names = Object.keys(fc).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  if(!names.length) fl.innerHTML='<div class="filter-empty">Load an ABDWLOC file.</div>';
+  names.forEach(f=>{
+    const row=document.createElement('div'); row.className='filter-row';
+    row.innerHTML = `<input type="checkbox" ${ABD.fields.has(f)?'checked':''}><span class="label" title="${abdEsc(f)}">${abdEsc(f)}</span><span class="count">${fc[f]}</span>`;
+    const cb=row.querySelector('input');
+    cb.onchange=()=>{ if(cb.checked) ABD.fields.add(f); else ABD.fields.delete(f); abdRender(); };
+    row.onclick=e=>{ if(e.target!==cb){ cb.checked=!cb.checked; cb.onchange(); } };
+    fl.appendChild(row);
+  });
+  const fileEl = document.getElementById('abd-file');
+  fileEl.innerHTML = ABD.file ? `<span>${abdEsc(ABD.file)} &middot; ${ABD.rows.length} wells</span><button id="abd-remove" type="button">remove</button>` : 'No ABDWLOC file loaded.';
+  const rm=document.getElementById('abd-remove'); if(rm) rm.onclick=abdClear;
+}
+function abdLoad(buf, name, persist){
+  ABD.rows = abdParse(buf); ABD.file = name;
+  ABD.fields = new Set(ABD.rows.map(r=>r.field));
+  if(persist){ try{
+    const u8=new Uint8Array(buf); let b=''; for(let i=0;i<u8.length;i+=0x8000) b+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));
+    localStorage.setItem(ABD_CACHE_KEY, JSON.stringify({name, data:btoa(b)}));
+  }catch(e){} }
+  abdBuildLists(); abdRender();
+  if(ABD.rows.length) setMapEmpty(false);
+}
+function abdZoom(){
+  const pts = abdVisible().map(r=>[r.lat,r.lng]);
+  if(pts.length) map.fitBounds(pts, {padding:[30,30], maxZoom:13});
+}
+function abdClear(){
+  ABD.rows=[]; ABD.file=null; ABD.fields=new Set();
+  try{ localStorage.removeItem(ABD_CACHE_KEY); }catch(e){}
+  abdBuildLists(); abdRender();
+}
+function abdHandleFile(f){
+  if(!f) return;
+  const rd=new FileReader();
+  rd.onload = e=>{
+    try{
+      abdLoad(e.target.result, f.name, true); abdZoom();
+      if(IS_TOUCH && window.closeMobileSidebar) setTimeout(closeMobileSidebar, 300);
+    }catch(err){ document.getElementById('abd-file').innerHTML = `<span style="color:#ff8a8a">${abdEsc(err.message)}</span>`; }
+  };
+  rd.readAsArrayBuffer(f);
+}
+(function abdInit(){
+  const drop=document.getElementById('abd-drop'), inp=document.getElementById('abd-input');
+  if(IS_TOUCH) document.getElementById('abd-drop-text').textContent='Tap to choose an ABDWLOC export (.xlsx)';
+  inp.onchange=()=>{ abdHandleFile(inp.files[0]); inp.value=''; };
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();drop.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();drop.classList.remove('drag');}));
+  drop.addEventListener('drop', e=>abdHandleFile(e.dataTransfer.files[0]));
+  document.getElementById('abd-search').addEventListener('input', e=>{ ABD.q=e.target.value; abdRender(); });
+  document.getElementById('abd-zoom').onclick=e=>{ e.preventDefault(); abdZoom(); if(IS_TOUCH && window.closeMobileSidebar) closeMobileSidebar(); };
+  document.getElementById('abd-field-all').onclick=e=>{
+    e.preventDefault();
+    const all=[...new Set(ABD.rows.map(r=>r.field))];
+    if(all.every(f=>ABD.fields.has(f))) ABD.fields.clear(); else all.forEach(f=>ABD.fields.add(f));
+    abdBuildLists(); abdRender();
+  };
+  document.getElementById('abd-legend').innerHTML =
+    `<div class="abd-legend-row">${shapeSvg('circle','#888','',13)} Schedule event (field-area color)</div>
+     <div class="abd-legend-row">${shapeSvg('triangle','#888','S',15)} Schedule surface plug event</div>
+     <div class="abd-legend-row">${shapeSvg('square','#888','A',15)} Schedule ABDWLOC event</div>
+     <div class="abd-legend-row">${shapeSvg('diamond',ABD_KINDS.reinsp.fill,'R',15)} ABDWLOC list: re-inspection</div>
+     <div class="abd-legend-row">${shapeSvg('square',ABD_KINDS.orig.fill,'O',15)} ABDWLOC list: original inspection</div>`;
+  abdBuildLists();
+  try{
+    const s=JSON.parse(localStorage.getItem(ABD_CACHE_KEY)||'null');
+    if(s){ const bin=atob(s.data), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i); abdLoad(u8.buffer, s.name, false); }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
