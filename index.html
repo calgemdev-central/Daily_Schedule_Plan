@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FEU_Schedule_ArcGIS_PlannerV2.1</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -227,10 +228,43 @@
   .leaflet-control-attribution{font-size:9px;}
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+  /* ---------- Mobile / touch layout (desktop unchanged) ---------- */
+  #mobile-menu-btn,#sidebar-backdrop{display:none;}
+  @media (max-width: 820px){
+    html,body{height:100%;overflow:hidden;}
+    #app{height:100vh;height:100dvh;width:100vw;}
+    #map{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;}
+    #sidebar{position:fixed;top:0;left:0;bottom:0;z-index:3000;width:min(88vw,380px);min-width:0;
+      transform:translateX(-102%);transition:transform .22s ease;box-shadow:4px 0 18px rgba(0,0,0,.5);}
+    body.sidebar-open #sidebar{transform:none;}
+    #sidebar-backdrop{display:block;position:fixed;inset:0;z-index:2900;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s;}
+    body.sidebar-open #sidebar-backdrop{opacity:1;pointer-events:auto;}
+    #mobile-menu-btn{display:flex;align-items:center;gap:6px;position:fixed;z-index:2500;
+      top:calc(10px + env(safe-area-inset-top));right:10px;background:var(--panel);color:var(--text);
+      border:1px solid var(--border);border-radius:22px;padding:10px 16px;font-size:14px;font-weight:bold;
+      box-shadow:0 2px 10px rgba(0,0,0,.45);cursor:pointer;}
+    #mobile-menu-btn .cnt{font-weight:normal;color:var(--muted);font-size:12px;}
+    /* bigger touch targets in the sidebar */
+    .filter-row,.dgroup-head{padding:9px 6px;font-size:14px;}
+    .dcontact{padding:7px 6px 7px 30px;font-size:13px;}
+    .filter-row input[type=checkbox],.dgroup-head input[type=checkbox],.dcontact input[type=checkbox]{width:18px;height:18px;}
+    .basemap-toggle button{padding:10px 4px;font-size:13px;}
+    select,input[type=text]{font-size:16px;padding:9px 10px;} /* 16px stops iOS zoom-on-focus */
+    .leaflet-touch .leaflet-bar a{width:40px;height:40px;line-height:40px;font-size:20px;}
+    .leaflet-popup.event-tip .leaflet-popup-content{font-size:13px;margin:12px 14px;max-height:55vh;overflow-y:auto;}
+    .event-tip td{font-size:12.5px;}
+    .event-tip .notes{font-size:12.5px;}
+    .event-tip .dir-link{font-size:14px;padding:11px 6px;}
+    .leaflet-popup-close-button{width:32px!important;height:32px!important;font-size:24px!important;line-height:30px!important;}
+    #map-placeholder{padding:0 24px;text-align:center;}
+  }
 </style>
 </head>
 <body>
 <div id="app">
+  <button id="mobile-menu-btn" type="button" aria-label="Open filters and controls">☰ Filters <span class="cnt" id="mobile-menu-cnt"></span></button>
+  <div id="sidebar-backdrop"></div>
   <div id="sidebar">
     <div id="sidebar-scroll">
       <div class="app-header">
@@ -437,6 +471,23 @@ map.getPane('refPane').style.zIndex = 350; // below the default overlayPane (400
 map.createPane('eventPane');
 map.getPane('eventPane').style.zIndex = 650; // above overlayPane and markerPane (600)
 
+// ---- Touch / phone support ----
+// On touch screens the dots are drawn larger and on a canvas renderer whose
+// 'tolerance' widens each dot's tap target by ~14px beyond what is drawn,
+// so a fingertip can hit them. Hover tooltips are skipped (there is no hover
+// on a phone); a tap opens the popup directly. Desktop/mouse is unchanged.
+const IS_TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+const eventRenderer = IS_TOUCH ? L.canvas({pane:'eventPane', tolerance:14, padding:0.3}) : null;
+(function(){
+  const btn = document.getElementById('mobile-menu-btn'), bd = document.getElementById('sidebar-backdrop');
+  const setOpen = (open)=>{ document.body.classList.toggle('sidebar-open', open); };
+  if(btn) btn.addEventListener('click', ()=>setOpen(!document.body.classList.contains('sidebar-open')));
+  if(bd) bd.addEventListener('click', ()=>setOpen(false));
+  window.closeMobileSidebar = ()=>setOpen(false);
+  window.addEventListener('resize', ()=>map.invalidateSize());
+  setTimeout(()=>map.invalidateSize(), 300);
+})();
+
 const basemapToggle = document.getElementById('basemap-toggle');
 Object.keys(basemaps).forEach(name=>{
   const btn = document.createElement('button');
@@ -636,6 +687,7 @@ scheduleDrop.addEventListener('drop', e=>{ if(e.dataTransfer.files.length) handl
 scheduleInput.addEventListener('change', e=>{ if(e.target.files.length) handleScheduleFile(e.target.files[0]); });
 
 function handleScheduleFile(file){
+  if(IS_TOUCH && window.closeMobileSidebar) setTimeout(closeMobileSidebar, 400); // show the map once a file is picked on a phone
   showFileStatus('Reading '+file.name+'...', false);
   const reader = new FileReader();
   reader.onload = (e)=>{
@@ -846,7 +898,7 @@ function renderRemoteList(){
     row.onclick = ()=>{
       map.setView([ev.lat, ev.lng], Math.max(map.getZoom(), 12));
       const found = currentMarkers.find(m=>m.ev===ev);
-      if(found){ found.marker.bringToFront(); found.marker.openTooltip(); setTimeout(()=>found.marker.closeTooltip(), 2500); }
+      if(found){ found.marker.bringToFront(); if(IS_TOUCH){ if(window.closeMobileSidebar) closeMobileSidebar(); setTimeout(()=>found.marker.openPopup(), 250); } else { found.marker.openTooltip(); setTimeout(()=>found.marker.closeTooltip(), 2500); } }
     };
     container.appendChild(row);
   });
@@ -993,10 +1045,11 @@ function renderEvents(events){
     const color = areaColors[ev.area];
     const m = L.circleMarker([ev.lat, ev.lng], {
       pane: 'eventPane',
-      radius: ev.priority ? 6 : 3.5,
+      ...(eventRenderer ? {renderer: eventRenderer} : {}),
+      radius: IS_TOUCH ? (ev.priority ? 10 : 7.5) : (ev.priority ? 6 : 3.5),
       fillColor: color,
       color: "#000000",
-      weight: ev.priority ? 1.2 : 0.5,
+      weight: IS_TOUCH ? (ev.priority ? 2 : 1.2) : (ev.priority ? 1.2 : 0.5),
       fillOpacity: 0.9
     });
     const priorityTag = ev.priority ? '<span class="priority-flag">PRIORITY</span>' : '';
@@ -1014,7 +1067,7 @@ function renderEvents(events){
         </table>
         ${notes}
       </div>`;
-    m.bindTooltip(infoHtml, {className:'event-tip', sticky:false, direction:'auto', offset:[0,-10], opacity:0.97});
+    if(!IS_TOUCH) m.bindTooltip(infoHtml, {className:'event-tip', sticky:false, direction:'auto', offset:[0,-10], opacity:0.97});
     // Hover shows the quick info above; click opens a popup with the same
     // info plus a Directions link, since a hover tooltip closes the instant
     // the pointer leaves the (small) marker, before it could ever reach a link.
@@ -1023,7 +1076,7 @@ function renderEvents(events){
     // data-lat/lng let rwRefreshGeo() patch this exact link's href in place
     // if a location comes back after the popup is already on screen.
     m.bindPopup(() => infoHtml + `<div class="dir-row"><a class="dir-link" data-lat="${ev.lat}" data-lng="${ev.lng}" href="${rwDirectionsUrl(ev.lat, ev.lng)}" target="_blank" rel="noopener">🧭 Get Directions</a></div>`,
-      {className:'event-tip'});
+      {className:'event-tip', maxWidth: IS_TOUCH ? Math.min(320, window.innerWidth - 60) : 300, autoPanPadding:[20,70]});
     m.on('popupopen', rwRefreshGeo); // retry each time — cheap once permission is granted, and catches a late "Allow"
     m.on('mouseover', ()=>m.bringToFront());
     currentMarkers.push({ev, marker:m});
@@ -1109,6 +1162,7 @@ function applyFilters(){
   document.getElementById('stat-total').textContent = shown;
   document.getElementById('stat-areas').textContent = shownAreas.size;
   document.getElementById('stat-ops').textContent = shownOps.size;
+  const mc=document.getElementById('mobile-menu-cnt'); if(mc) mc.textContent = '· '+shown+' shown';
   updateRwPanel();
 }
 
